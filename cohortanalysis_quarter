@@ -1,0 +1,27 @@
+WITH 
+cte as(SELECT 
+t1.userid,
+t1.date sdate,
+ t1.city1,t1.services,t1.amount,t2.firstdate from [database_name].[dataset_name].[table_name] t1 join 
+(SELECT userid,MIN(date) firstdate
+FROM [database_name].[dataset_name].[table_name] transaction
+GROUP BY userid ) as t2
+ON t1.userid=t2.userid),
+
+-- temporary table to calculate month of cohort and repetition
+cte2 as(
+SELECT *,
+  CONCAT(EXTRACT( YEAR FROM firstdate),' Q',EXTRACT (QUARTER FROM firstdate))as cohort,DATE_DIFF(CAST(sdate as DATE),CAST(firstdate AS DATE),MONTH) as repeat,
+  DATE_DIFF(CAST(sdate as DATE),CAST(firstdate AS DATE),QUARTER) repeat_q
+FROM CTE)
+
+--temp table for onboarded user
+
+
+
+select t2.cohort,SUM(t2.amount) revenue,
+(SELECT count (distinct userid) from cte2 where cte2.cohort = t2.cohort and repeat=0 ) as ob_all,
+COUNT(t2.userid) as number,COUNT(distinct t2.userid) as unique,concat('Q',FORMAT("%02d",t2.repeat_q))as ret_q
+from cte2 t2 
+group by cohort,ret_q
+order by cohort asc
