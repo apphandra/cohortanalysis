@@ -1,3 +1,5 @@
+-- making temp table to calculate the cohort date (first date of transaction) of each transaction
+
 WITH 
 cte as(SELECT 
 t1.userid,
@@ -5,14 +7,16 @@ t1.date sdate,
 t1.city1,
 t1.services,
 t1.amount,
-t2.firstdate from [database_name].[dataset_name].[table_name] t1 
-join 
-(SELECT userid,MIN(date) firstdateFROM [database_name].[dataset_name].[table_name] transaction
+t2.firstdate from [database_name].[dataset_name].[table_name] t1   -- calling transaction table
+join        -- joining transaction date and its cohort date
+
+(SELECT userid,MIN(date) firstdateFROM [database_name].[dataset_name].[table_name] transaction   -- calling the list of cohort date of each user name
 GROUP BY userid ) as t2
 
 ON t1.userid=t2.userid),
 
 -- temporary table to calculate month of cohort and repetition
+
 cte2 as(
 SELECT *,
   CONCAT(EXTRACT( YEAR FROM firstdate),' Q',EXTRACT (QUARTER FROM firstdate))as cohort,DATE_DIFF(CAST(sdate as DATE),CAST(firstdate AS DATE),MONTH) as repeat,
@@ -22,6 +26,7 @@ FROM CTE)
 --temp table for onboarded user
 
 
+-- calculate cohort, its onboarded user, and number of user of each repetition
 
 select t2.cohort,SUM(t2.amount) revenue,
 (SELECT count (distinct userid) from cte2 where cte2.cohort = t2.cohort and repeat=0 ) as ob_all,
